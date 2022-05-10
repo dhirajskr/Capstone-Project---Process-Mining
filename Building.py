@@ -7,12 +7,20 @@ import pm4py
 from pm4py.objects.log.util import dataframe_utils
 from pm4py.objects.conversion.log import converter as log_converter
 
+#sdhiraj: miner algorithms
+from pm4py.algo.discovery.alpha import algorithm as alpha_miner
+from pm4py.algo.discovery.inductive import algorithm as inductive_miner
+from pm4py.objects.conversion.process_tree import converter as pt_converter
+
 #wilgy: Event log filtering modules
 from pm4py.algo.filtering.log.variants import variants_filter
 from pm4py.algo.filtering.log.attributes import attributes_filter
 
+
 #wilgy: Visualisation modules
+#sdhiraj
 from pm4py.visualization.graphs import visualizer as graphs_visualizer
+from pm4py.visualization.process_tree import visualizer as pt_visualizer
 
 #wilgy: Statistical modules
 from pm4py.statistics.traces.generic.log import case_statistics, case_arrival
@@ -101,7 +109,7 @@ def closeMinerWindow():
 Label(miner_window, text='Select which process mining algorithm to utilise:').pack(pady=20)
 Radiobutton(miner_window, text="Directly Follows Graph",variable=miner_selection, value=1, command=minerValue).pack()
 Radiobutton(miner_window, text="Heuristics Miner",variable=miner_selection, value=2, command=minerValue).pack()
-Radiobutton(miner_window, text="Petri Net",variable=miner_selection, value=3, command=minerValue).pack()
+Radiobutton(miner_window, text="Alpha Miner",variable=miner_selection, value=3, command=minerValue).pack()
 Radiobutton(miner_window, text="Inductive Miner",variable=miner_selection, value=4, command=minerValue).pack()
 Button(miner_window, text="Ok", fg='blue', command=closeMinerWindow).pack(pady=20) #wilgy:clicking OK button will close the window
 
@@ -155,7 +163,29 @@ def pm_heuristics(df):
     print("Visualizing heuristics net ...")
     pm4py.view_heuristics_net(map,"pdf")
 
+#sdhiraj alpha miner algorithm containing petri net object and visualisation
+def pm_alpha(event_log):
+    print("Discover petri net ...")
+    net, start_activities, end_activities = alpha_miner.apply(event_log)  # The map object is a PetriNet
+    print("Visualizing petri net ...")
+    #https://pm4py.fit.fraunhofer.de/static/assets/api/2.2.10/pm4py.visualization.petri_net.html
+    petri_net_viz = pm4py.visualization.petri_net.visualizer.apply(net, start_activities, end_activities)
+    pm4py.visualization.petri_net.visualizer.view(petri_net_viz)
 
+def pm_inductive(event_log):
+    print("Discover inductive...")
+    tree = inductive_miner.apply_tree(event_log)
+    print("Visualizing inductive ...")
+  #  inductive_viz = pt_visualizer.apply(tree)
+    inductive_viz = pt_visualizer.apply(tree)
+    pt_visualizer.view(inductive_viz)
+
+    net, initial_marking, final_marking = pt_converter.apply(tree)
+    parameters = {pm4py.visualization.petri_net.visualizer.Variants.FREQUENCY.value.Parameters.FORMAT: "png"}
+
+    petri_net_viz = pm4py.visualization.petri_net.visualizer.apply(net, initial_marking, final_marking, parameters=parameters, 
+                           variant=pm4py.visualization.petri_net.visualizer.Variants.FREQUENCY,log=event_log)
+    pm4py.visualization.petri_net.visualizer.view(petri_net_viz)
 
 #MAIN
 df = import_pm4py(import_csv(find_files('log_dataset.csv', 'C:')))
@@ -185,13 +215,18 @@ pm4py.view_events_distribution_graph(filter, distr_type="months", format="pdf")
 
 
 #wilgy: Call the selected method to produce respective process mining output. 
+#sdhiraj
 pmSelector = miner_selection.get()
 print('pmSelector: {}'.format(pmSelector))
 if pmSelector == 1:
     pm_dfg(filter)
 if pmSelector == 2:
     pm_heuristics(filter)
-#TODO Add last two algorithm methods
+if pmSelector == 3:
+    pm_alpha(filter)  
+if pmSelector == 4:
+    pm_inductive(filter)
+
 else:
     print("end of prog")
  
