@@ -7,6 +7,9 @@ import pm4py
 from pm4py.objects.log.util import dataframe_utils
 from pm4py.objects.conversion.log import converter as log_converter
 
+#sdhiraj
+import shutil
+
 #sdhiraj: miner algorithms
 from pm4py.algo.discovery.alpha import algorithm as alpha_miner
 from pm4py.algo.discovery.inductive import algorithm as inductive_miner
@@ -15,7 +18,6 @@ from pm4py.objects.conversion.process_tree import converter as pt_converter
 #wilgy: Event log filtering modules
 from pm4py.algo.filtering.log.variants import variants_filter
 from pm4py.algo.filtering.log.attributes import attributes_filter
-
 
 #wilgy: Visualisation modules
 #sdhiraj
@@ -106,6 +108,7 @@ def closeMinerWindow():
     miner_window.destroy()
 
 #wilgy: New window to select which miner to utilise
+#sdhiraj
 Label(miner_window, text='Select which process mining algorithm to utilise:').pack(pady=20)
 Radiobutton(miner_window, text="Directly Follows Graph",variable=miner_selection, value=1, command=minerValue).pack()
 Radiobutton(miner_window, text="Heuristics Miner",variable=miner_selection, value=2, command=minerValue).pack()
@@ -152,6 +155,9 @@ def import_csv(file_path):
 def pm_dfg(event_log):
     dfg, start_activities, end_actvities = pm4py.discover_dfg(event_log)
     pm4py.view_dfg(dfg, start_activities, end_actvities, 'pdf')
+#sdhiraj:  converts to png and calls file_to_Algorithm_Outputs method 
+    pm4py.vis.save_vis_dfg(dfg, start_activities, end_actvities, 'dfg.png')
+    file_to_Algorithm_Outputs('dfg.png')
 
 #wilgy: from GGrossman.
 def pm_heuristics(df):
@@ -162,30 +168,47 @@ def pm_heuristics(df):
     print("Class name of variable map: " + map.__class__.__name__)
     print("Visualizing heuristics net ...")
     pm4py.view_heuristics_net(map,"pdf")
+#sdhiraj:  converts to png and calls file_to_Algorithm_Outputs method 
+    pm4py.vis.save_vis_heuristics_net(map, 'heuristics.png')
+    file_to_Algorithm_Outputs('heuristics.png')
 
 #sdhiraj alpha miner algorithm containing petri net object and visualisation
 def pm_alpha(event_log):
     print("Discover petri net ...")
-    net, start_activities, end_activities = alpha_miner.apply(event_log)  # The map object is a PetriNet
+    net, start_activities, end_activities = alpha_miner.apply(event_log)  # sdhiraj: The map object is a PetriNet
     print("Visualizing petri net ...")
     #https://pm4py.fit.fraunhofer.de/static/assets/api/2.2.10/pm4py.visualization.petri_net.html
     petri_net_viz = pm4py.visualization.petri_net.visualizer.apply(net, start_activities, end_activities)
     pm4py.visualization.petri_net.visualizer.view(petri_net_viz)
+#sdhiraj:  converts to png and calls file_to_Algorithm_Outputs method 
+    pm4py.vis.save_vis_petri_net(net, start_activities, end_activities, 'alpha.png')
+    file_to_Algorithm_Outputs('alpha.png')
 
+#sdhiraj: inductive miner algorithm and visualisation that depicts tree and calls pm_inductive_petri method
 def pm_inductive(event_log):
     print("Discover inductive...")
     tree = inductive_miner.apply_tree(event_log)
     print("Visualizing inductive ...")
-  #  inductive_viz = pt_visualizer.apply(tree)
     inductive_viz = pt_visualizer.apply(tree)
+   #tree visualisation
     pt_visualizer.view(inductive_viz)
-
+#sdhiraj:  converts to png and calls file_to_Algorithm_Outputs method 
+    pm4py.vis.save_vis_process_tree(tree, 'inductive_tree.png')
+    file_to_Algorithm_Outputs('inductive_tree.png')
+   
     net, initial_marking, final_marking = pt_converter.apply(tree)
     parameters = {pm4py.visualization.petri_net.visualizer.Variants.FREQUENCY.value.Parameters.FORMAT: "png"}
-
     petri_net_viz = pm4py.visualization.petri_net.visualizer.apply(net, initial_marking, final_marking, parameters=parameters, 
                            variant=pm4py.visualization.petri_net.visualizer.Variants.FREQUENCY,log=event_log)
+    #petrinet visualisation
     pm4py.visualization.petri_net.visualizer.view(petri_net_viz)
+#sdhiraj:  converts to png and calls file_to_Algorithm_Outputs method 
+    pm4py.vis.save_vis_petri_net(net, initial_marking, final_marking, 'inductive_petri_net.png')
+    file_to_Algorithm_Outputs('inductive_petri_net.png')
+
+#sdhiraj:moves png file to Algorithm_Outputs folder
+def file_to_Algorithm_Outputs(file_name):
+	shutil.move(file_name, "Algorithm_Outputs")
 
 #MAIN
 df = import_pm4py(import_csv(find_files('log_dataset.csv', 'C:')))
@@ -215,7 +238,7 @@ pm4py.view_events_distribution_graph(filter, distr_type="months", format="pdf")
 
 
 #wilgy: Call the selected method to produce respective process mining output. 
-#sdhiraj
+#sdhiraj: added call for inductive and alpha miner
 pmSelector = miner_selection.get()
 print('pmSelector: {}'.format(pmSelector))
 if pmSelector == 1:
@@ -255,7 +278,7 @@ else:
     pm4py.view_events_distribution_graph(episode_event_log, distr_type="months", format="pdf")
 
 
-
+#file output in same directory, 
 
 
 
