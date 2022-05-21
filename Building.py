@@ -274,7 +274,6 @@ else:
     case_duration = case_statistics.get_median_case_duration(episode_event_log, parameters={case_statistics.Parameters.TIMESTAMP_KEY:'time:timestamp'})
     #wilgy: formula to change result to day instead of seconds, rounding to 2 decimal places. 
     case_duration = round(case_duration/86400, 2)
-    #print(df2)
     print("EpisodeID {} contains {} events. The total case duration is {} days".format(episodeID, len(df2), case_duration))
     pm4py.view_events_distribution_graph(episode_event_log, distr_type="months", format="pdf")
 

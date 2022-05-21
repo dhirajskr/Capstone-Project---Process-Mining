@@ -6,6 +6,7 @@ import pandas as pd
 import string, time
 
 start_time = time.time()
+
 #wilgy: packages to tokenize sentences and extract nouns
 import nltk 
 from nltk.corpus import stopwords 
@@ -57,15 +58,19 @@ SNOMEDCT = PYM["SNOMEDCT_US"]
 CUI = PYM["CUI"] #UMLS
 
 
+
+
 #TODO add user input search function
 """ search_result = SNOMEDCT_US.search("Sendaway bag taken")
 print("There are {} potential matches:".format(len(search_result)))
 print(search_result) """
 
-df = pd.read_csv(find_files('log_dataset.csv', 'C:'))
+df = pd.read_csv(find_files('ed13reduced.csv', 'C:'))
 
+#wilgy: convert column to type string. 
+df['presenting_problem'] = df['presenting_problem'].astype(str)
 #wilgy: create list of unique activities
-activity_list = df.Activity.unique()
+activity_list = df.presenting_problem.unique()
 
 #wilgy: strip punctuation from the list (required to complete search of metathesaurus) and append to new list
 activity_list_stripped = []
@@ -77,111 +82,34 @@ for char in activity_list:
 print('Count of unique activities (activity_list): {}'.format(len(activity_list)))
 print('Count of unique activities (activity_list_stripped): {}'.format(len(activity_list_stripped)))
 
+print("\nConducting Search of SNOMED...")
 #Wilgy: Create list of potential matches for all unique activities. 
 sno_list = []
 count_success = 0
 for i in activity_list_stripped:
-    sno_result = SNOMEDCT.search(i)
-    if len(sno_result) != 0:
+    sno_result = SNOMEDCT.search(i.lower()) #convert string to lowercase due to pyMedTermino2 query function utilisation of keyword 'NOT'.
+    if len(sno_result) > 0:
         count_success += 1
         sno_list.append(len(sno_result))
-        print("Potential SNOMED matches for '" + str(i) + "'" + ": \n{}".format(sno_result))
-
+        #print("Potential SNOMED matches for '" + str(i) + "'" + ": \n{}".format(sno_result))
 success_rate = (count_success/len(activity_list)) * 100
 print("Out of {} activities, {} had matches. Therefore the success rate is %{}".format(len(activity_list),count_success, round(success_rate, 2)))
 print("***Finished SNOMED***\n")
 
 #UMLS
+print("\nConducting Search of UMLS...")
 umls_list = []
+count_success = 0
 for i in activity_list_stripped:
-    umls_result = CUI.search(i)
+    umls_result = CUI.search(i.lower())
     if len(umls_result) != 0:
+        count_success += 1
         umls_list.append(len(umls_result))
-        print("Potential UMLS matches for '" + str(i) + "'" + ": \n{}".format(umls_result))
-
+        #print("Potential UMLS matches for '" + str(i) + "'" + ": \n{}".format(umls_result))
 success_rate = (count_success/len(activity_list)) * 100
 print("Out of {} activities, {} had matches. Therefore the success rate is %{}".format(len(activity_list),count_success, round(success_rate, 2)))
 
-#print(umls_list)
 print("***Finished UMLS***\n")
-
-#wilgy: create new list with test set data from data dictionary:
-print("Searching with test set list...")
-test_set_list = ['Referred request for NIPT', 'Local request for NIPT'
-    , 'NIPT plain reporting test coversheet'
-    , 'Troubleshooting request data sent back for the referring lab to action'
-    , 'Troubleshooting request data for SNP to action', 'NIPT redraw request recollect', 'Venus PDF reporting test']
-
-
-sno_list = []
-for i in test_set_list:
-    sno_result = SNOMEDCT.search(i)
-    if len(sno_result) != 0:
-        sno_list.append(len(sno_result))
-        print("Potential SNOMED matches for '" + str(i) + "'" + ": \n{}".format(sno_result))
-    else:
-        print("No matches for '" + str(i) + "'.")
-print("***Finished SNOMED***")
-
-#wilgy: Extract list of nouns from the test_set_list.
-nouns_list = []
-
-print('++++++++++++++++++++++++++++++++++++++++++++++++++')
-
-for i in test_set_list:
-    print('Phrase: ' + i)
-    
-    this_list = []
-    if len(ProperNounExtractor(i))>0:
-        print('Nouns in phrase: ')
-        this_list = ProperNounExtractor(i)
-        for i in this_list:
-            print(i)
-            nouns_list.append(i)
-        print("")
-    else:
-        print('No nouns found\n')
-    
-    
-
-print('++++++++++++++++++++++++++++++++++++++++++++++++++')
-
-
-#wilgy: convert list to a set to extract unique entries.
-nouns_set = set(nouns_list)
-#wilgy: convert back to a list. 
-nouns_list = list(nouns_set)
-print('Nouns list:')
-print(nouns_list)
-
-#wilgy: Search SNOMED for matches against the list of nouns. 
-print("Check nouns in SNOMED...")
-
-nouns_checked = []
-noun_count=0
-parent_count = 0
-children_count = 0
-
-for i in nouns_list:
-    sno_result = SNOMEDCT.search(i)
-    if len(sno_result) > 0:
-        noun_count += 1
-        nouns_checked.append(len(sno_result))
-        print("Potential matches for '" + str(i) + "' " + ":")
-        for i in sno_result: #determine how many parents and childrend the concept has. 
-            parent_count = len(SNOMEDCT[i.name].parents) 
-            children_count = len(SNOMEDCT[i.name].children)
-            concept_label = i.label[0]
-            
-            print(concept_label + ' (has {} parent/s and {} children.)\n'.format(parent_count, children_count))
-            
-    else:
-        print("No matches found for '" + str(i) + "'\n")
-print('\nOut of {} nouns, {} had matches.'.format(len(nouns_list), noun_count))
-print("***Finished SNOMED***\n")
 
 #wilgy: Display code runtime
 print("Program runtime --- %s seconds ---" % round((time.time() - start_time), 2))
-
-
-
