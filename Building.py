@@ -6,7 +6,7 @@ import pandas as pd
 import pm4py
 from pm4py.objects.log.util import dataframe_utils
 from pm4py.objects.conversion.log import converter as log_converter
-
+import warnings
 #sdhiraj
 import shutil
 
@@ -16,6 +16,7 @@ from pm4py.algo.discovery.inductive import algorithm as inductive_miner
 from pm4py.objects.conversion.process_tree import converter as pt_converter
 
 #wilgy: Event log filtering modules
+warnings.filterwarnings("ignore", category=DeprecationWarning) #wilgy: supress deprecation warning for variants_filter
 from pm4py.algo.filtering.log.variants import variants_filter
 from pm4py.algo.filtering.log.attributes import attributes_filter
 
@@ -138,7 +139,9 @@ def import_pm4py(event_log):
     event_log = pm4py.format_dataframe(event_log, case_id='EpisodeNo', activity_key='Activity'
         , timestamp_key='EndTime',start_timestamp_key='EventTime')
     start_activities = pm4py.get_start_activities(event_log)
+    end_activities = pm4py.get_end_activities(event_log)
     print("Number of unique start activities: {}".format(len(set(start_activities))))
+    print("Number of unique end activities: {}".format(len(set(end_activities))))
     return event_log
 
 #wilgy: function utilises pandas to import the csv and display the count of events and total cases.
@@ -159,7 +162,7 @@ def pm_dfg(event_log):
     pm4py.vis.save_vis_dfg(dfg, start_activities, end_actvities, 'dfg.png')
     file_to_Algorithm_Outputs('dfg.png')
 
-#wilgy: from GGrossman.
+#wilgy: from GGrossmann.
 def pm_heuristics(df):
     print("Discover heuristics net ...")
     # https://pm4py.fit.fraunhofer.de/static/assets/api/2.2.18/pm4py.html?highlight=discover_heuristics_net#pm4py.discovery.discover_heuristics_net
@@ -213,13 +216,16 @@ def file_to_Algorithm_Outputs(file_name):
 #MAIN
 df = import_pm4py(import_csv(find_files('log_dataset.csv', 'C:')))
 
-
-
 #Convert DataFrame object into an EventLog object (which is required for querying variants):
 event_log = pm4py.convert_to_event_log(df)
-#event_log = log_converter.apply(df)
-#wilgy: filter variants experimenting
+
+#wilgy: filter variants by percentage takes the user input for percentage selection and applies it to the
+#event log in order to provide clearer visulalisations. 
 filter = pm4py.filter_variants_percentage(event_log, current_value.get())
+
+#wilgy: Statistics - determine how many variants (paths) are present.
+variants = variants_filter.get_variants(event_log)
+print("Number of path variants in the event log: {}".format(len(variants)))
 
 #wilgy: Statistics - find the median case duration of the whole log
 median_case_duration = case_statistics.get_median_case_duration(event_log, parameters={case_statistics.Parameters.TIMESTAMP_KEY: "time:timestamp"})
@@ -228,11 +234,6 @@ print("Median case duration of the entire data set(days): {}".format(round(media
 #wilgy: Statistics - find the median case duration of the filtered log
 filtered_median_case_duration = case_statistics.get_median_case_duration(filter, parameters={case_statistics.Parameters.TIMESTAMP_KEY: "time:timestamp"})
 print("Median case duration of the filtered data set(days): {}".format(round(filtered_median_case_duration/86400,2)))
-
-#wilgy: Statistics - display graph of event distribution, binned by Month.
-"""x, y = attributes_filter.get_kde_date_attribute(filter, attribute="time:timestamp")
-gviz = graphs_visualizer.apply_plot(x, y, variant=graphs_visualizer.Variants.DATES)
-graphs_visualizer.view(gviz)"""
 
 pm4py.view_events_distribution_graph(filter, distr_type="months", format="pdf")
 
@@ -278,7 +279,7 @@ else:
     pm4py.view_events_distribution_graph(episode_event_log, distr_type="months", format="pdf")
 
 
-#file output in same directory, did this commit? 
+#file output in same directory, 
 
 
 
