@@ -22,6 +22,7 @@ from pm4py.objects.conversion.process_tree import converter as pt_converter
 # wilgy: Event log filtering modules
 from pm4py.algo.filtering.log.variants import variants_filter
 from pm4py.algo.filtering.log.attributes import attributes_filter
+warnings.filterwarnings("ignore", category=DeprecationWarning) #wilgy: supress deprecation warning for variants_filter
  
 # wilgy: Visualisation modules
 # sdhiraj
@@ -249,8 +250,9 @@ episode_list = df["case:concept:name"].unique()
  
 # Convert DataFrame object into an EventLog object (which is required for querying variants):
 event_log = pm4py.convert_to_event_log(df)
-# event_log = log_converter.apply(df)
-# wilgy: filter variants experimenting
+
+#wilgy: filter variants by percentage takes the user input for percentage selection and applies it to the
+#event log in order to provide clearer visulalisations. 
 filter = pm4py.filter_variants_percentage(event_log, current_value.get())
  
 # wilgy: Statistics - find the median case duration of the whole log
@@ -272,7 +274,7 @@ pm4py.save_vis_events_distribution_graph(filter, 'distribution_graph.pdf', distr
 # wilgy: Call the selected method to produce respective process mining output.
 # sdhiraj: added call for inductive and alpha miner
 pmSelector = miner_selection.get()
-print('pmSelector: {}'.format(pmSelector))
+#print('pmSelector: {}'.format(pmSelector))
 if pmSelector == 1:
     pm_dfg(filter)
 if pmSelector == 2:
@@ -284,8 +286,8 @@ if pmSelector == 4:
  
 # wilgy: Explore details of a single EpisodeID:
 episodeID = input("Enter the EpisodeID #: ")
-print("EpisodeID selection: {}".format(episodeID))
-print()
+#print("EpisodeID selection: {}".format(episodeID))
+#print()
  
 # wilgy: create new data frame, containing only the selected EpisodeID
 df2 = df.loc[df["case:concept:name"] == episodeID]
