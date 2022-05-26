@@ -36,7 +36,7 @@ def ProperNounExtractor(text):
         words = [word for word in words if word not in set(stopwords.words('english'))]
         tagged = nltk.pos_tag(words)
         for (word, tag) in tagged:
-            if tag == 'NNP': # If the word is a proper noun
+            if tag in ('NNP', 'NN'): # If the word is a proper noun
                 nouns.append(word)
     return nouns
 
@@ -69,40 +69,41 @@ activity_list = df.Activity.unique()
 
 #wilgy: strip punctuation from the list (required to complete search of metathesaurus) and append to new list
 activity_list_stripped = []
-for char in activity_list:
-    char = char.translate({ord(i): None for i in string.punctuation})
-    activity_list_stripped.append(char)
+trans = str.maketrans(dict.fromkeys(string.punctuation, " "))
+for i in activity_list:
+    i = i.translate(trans)
+    activity_list_stripped.append(i)
 
 #wilgy: compare length of each list to ensure no activities were omitted while stripping. 
 print('Count of unique activities (activity_list): {}'.format(len(activity_list)))
 print('Count of unique activities (activity_list_stripped): {}'.format(len(activity_list_stripped)))
 
-#Wilgy: Create list of potential matches for all unique activities. 
-sno_list = []
+# wilgy: search SNOMED terminology for any matches, tracking the count of matches to determine overall matching 
+# success rate. If matches found, display the results for the phrase, and the corresponding matches to that phrase. 
 count_success = 0
 for i in activity_list_stripped:
     sno_result = SNOMEDCT.search(i)
     if len(sno_result) != 0:
         count_success += 1
-        sno_list.append(len(sno_result))
         print("Potential SNOMED matches for '" + str(i) + "'" + ": \n{}".format(sno_result))
 
 success_rate = (count_success/len(activity_list)) * 100
-print("Out of {} activities, {} had matches. Therefore the success rate is %{}".format(len(activity_list),count_success, round(success_rate, 2)))
+print("Out of {} activities, {} had matches. Therefore the success rate is %{}".format(len(activity_list_stripped),count_success, round(success_rate, 2)))
 print("***Finished SNOMED***\n")
 
-#UMLS
-umls_list = []
+# wilgy: search UMLS terminology for any matches, tracking the count of matches to determine overall matching 
+# success rate. If matches found, display the results for the phrase, and the corresponding matches to that phrase. 
+count_success = 0
 for i in activity_list_stripped:
     umls_result = CUI.search(i)
     if len(umls_result) != 0:
-        umls_list.append(len(umls_result))
+        count_success += 1
         print("Potential UMLS matches for '" + str(i) + "'" + ": \n{}".format(umls_result))
 
 success_rate = (count_success/len(activity_list)) * 100
-print("Out of {} activities, {} had matches. Therefore the success rate is %{}".format(len(activity_list),count_success, round(success_rate, 2)))
+print("Out of {} activities, {} had matches. Therefore the success rate is %{}".format(len(activity_list_stripped),count_success, round(success_rate, 2)))
 
-#print(umls_list)
+
 print("***Finished UMLS***\n")
 
 #wilgy: create new list with test set data from data dictionary:
@@ -157,7 +158,6 @@ print(nouns_list)
 #wilgy: Search SNOMED for matches against the list of nouns. 
 print("Check nouns in SNOMED...")
 
-nouns_checked = []
 noun_count=0
 parent_count = 0
 children_count = 0
@@ -166,22 +166,21 @@ for i in nouns_list:
     sno_result = SNOMEDCT.search(i)
     if len(sno_result) > 0:
         noun_count += 1
-        nouns_checked.append(len(sno_result))
-        print("Potential matches for '" + str(i) + "' " + ":")
-        for i in sno_result: #determine how many parents and childrend the concept has. 
+        print("'" + str(i) + "' has {} potential matches. The first 3 matches are:".format(len(sno_result)))
+        for i in sno_result[:3]: #determine how many parents and children the concept has. 
             parent_count = len(SNOMEDCT[i.name].parents) 
             children_count = len(SNOMEDCT[i.name].children)
             concept_label = i.label[0]
             
-            print(concept_label + ' (has {} parent/s and {} children.)\n'.format(parent_count, children_count))
-            
+            print(concept_label + ' (has {} parent/s and {} children.)'.format(parent_count, children_count))
+        print("\n*****\n")      
     else:
-        print("No matches found for '" + str(i) + "'\n")
-print('\nOut of {} nouns, {} had matches.'.format(len(nouns_list), noun_count))
+        print("No matches found for '" + str(i) + "'\n\n*****\n")
+print('Out of {} nouns, {} had matches.'.format(len(nouns_list), noun_count))
 print("***Finished SNOMED***\n")
 
 #wilgy: Display code runtime
-print("Program runtime --- %s seconds ---" % round((time.time() - start_time), 2))
+print("Program runtime --- {} seconds --- (-- {} minutes --)".format((round((time.time() - start_time), 2)), (round(((time.time() - start_time)/60), 2) )))
 
 
 
