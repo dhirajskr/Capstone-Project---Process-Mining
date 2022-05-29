@@ -45,16 +45,20 @@ def ProperNounExtractor(text):
 #https://www.nlm.nih.gov/research/umls/licensedcontent/umlsknowledgesources.html?_gl=1*1o8wtvz*_ga*MTY1OTkyNDg0OS4xNjUwNDAxMjg2*_ga_7147EPK006*MTY1MTEyNzkyNy4xNC4wLjE2NTExMjc5MjcuMA..*_ga_P1FPTH9PL4*MTY1MTEyNzkyNy4xNC4wLjE2NTExMjc5MjcuMA..
 #import takes approx 10 mins. Once initial import completed, it is not necessary to import every time the program is run, hence the following lines have been
 #commented out. If new import is required, simply uncomment the lines below.    
-""" default_world.set_backend(filename = "pym.sqlite3")
+'''default_world.set_backend(filename = "pym.sqlite3")
 print('Importing terminologies...')
 import_umls(find_files("umls-2021AB-metathesaurus.zip", 'C:'), terminologies = ["SNOMEDCT", "CUI"])
-print('Imported') """
+print('Imported') '''
+default_world.save()
 
 #wilgy: set backend for pyMedTermino2 to query and create relvant variables. 
 default_world.set_backend(filename="pym.sqlite3")
 PYM = get_ontology("http://PYM/").load()
 SNOMEDCT = PYM["SNOMEDCT_US"]
 CUI = PYM["CUI"] #UMLS
+print(PYM)
+concept = SNOMEDCT[302509004]
+print(concept)
 
 
 #TODO add user input search function
