@@ -29,7 +29,7 @@ from pm4py.visualization.graphs import visualizer as graphs_visualizer
 from pm4py.visualization.process_tree import visualizer as pt_visualizer
 
 # wilgy: Statistical modules
-from pm4py.statistics.traces.generic.log import case_statistics, case_arrival
+from pm4py.statistics.traces.generic.log import case_statistics as cs, case_arrival
 from pm4py.statistics.traces.generic.pandas import case_statistics, case_arrival
 
 # *****************************************************************************
@@ -47,16 +47,13 @@ variants_percentage_selection.title('Percentage Selector')
 variants_percentage_selection.columnconfigure(0, weight=1)
 variants_percentage_selection.columnconfigure(1, weight=3)
 
-
 # wilgy: function to format the percentage selection.
 def get_current_value():
     return '{: .0f} percent'.format(current_value.get() * 100)
 
-
 # wilgy: function listens for slider move and changes value label accordingly.
 def slider_changed(event):
     value_label.configure(text=get_current_value())
-
 
 # wilgy: function to close the window and return the selected percentage.
 def closeWindow():
@@ -66,7 +63,6 @@ def closeWindow():
     print("Selected threshold: {}".format(selected_value))
     variants_percentage_selection.destroy()
     return selected_value
-
 
 # wilgy: label for the slider
 slider_label = ttk.Label(variants_percentage_selection, text='The percentage setting determines the minimum \n'
@@ -101,10 +97,8 @@ variants_percentage_selection.mainloop()
 #       algorithm to use for process mining.
 # *****************************************************************************
 
-
 miner_window = Tk()
 miner_selection = IntVar()
-
 
 # wilgy: function returning the value of miner selection
 def minerValue():
@@ -112,14 +106,12 @@ def minerValue():
     print("Selected miner: {}".format(value))
     return value
 
-
 # wilgy: function to close miner threshold selection window. If no algorithm selected, default to 1 (DFG).
 def closeMinerWindow():
     value = miner_selection.get()
     if value == 0:
         miner_selection.set(1)
     miner_window.destroy()
-
 
 # wilgy: New window to select which miner to utilise
 # sdhiraj
@@ -136,7 +128,6 @@ miner_window.title('PM Algorithm selection')
 miner_window.geometry("400x300+10+10")
 miner_window.mainloop()
 
-
 # *****************************************************************************
 # End of window
 # *****************************************************************************
@@ -148,18 +139,18 @@ def find_files(filename, path):
     for f in file:
         return (f)
 
-
 # wilgy: function converts csv to event log format, with relevant variables selected as keys.
-# Also filters the eventlog to determine start activities and corresponding count of each start activity.
+# Also filters the eventlog to determine start and end activities and corresponding count of each start and end activities.
 def import_pm4py(event_log):
     event_log = pm4py.format_dataframe(event_log, case_id='EpisodeNo', activity_key='Activity'
                                        , timestamp_key='EndTime', start_timestamp_key='EventTime')
     start_activities = pm4py.get_start_activities(event_log)
+    end_activities = pm4py.get_end_activities(event_log)
     print("Number of unique start activities: {}".format(len(set(start_activities))))
+    print("Number of unique end activities: {}".format(len(set(end_activities))))
     return event_log
 
-
-# wilgy: function utilises pandas to import the csv and display the count of events and total cases.
+# wilgy: function utilises pandas to import the csv and display the count of events and total unique cases.
 def import_csv(file_path):
     event_log = pd.read_csv(file_path, sep=',')
     num_events = len(event_log)
@@ -169,25 +160,23 @@ def import_csv(file_path):
     event_log = dataframe_utils.convert_timestamp_columns_in_df(event_log)
     return event_log
 
-
 # wilgy: function to discover and view directly follows graph (DFG). Output as PDF.
 def pm_dfg(event_log):
     dfg, start_activities, end_actvities = pm4py.discover_dfg(event_log)
-    pm4py.view_dfg(dfg, start_activities, end_actvities, 'pdf')
+    #pm4py.view_dfg(dfg, start_activities, end_actvities, 'pdf')
     # sdhiraj:  converts to png and calls file_to_Algorithm_Outputs method
     pm4py.vis.save_vis_dfg(dfg, start_activities, end_actvities, 'dfg.png')
     all_episodes_miner_output('/dfg.png')
 
-
-# wilgy: from GGrossman.
+# wilgy: from GGrossmann.
 def pm_heuristics(df):
     print("Discover heuristics net ...")
     # https://pm4py.fit.fraunhofer.de/static/assets/api/2.2.18/pm4py.html?highlight=discover_heuristics_net#pm4py.discovery.discover_heuristics_net
     map = pm4py.discovery.discover_heuristics_net(df, current_value.get())
     # The map object is a HeuristicsNet
-    print("Class name of variable map: " + map.__class__.__name__)
-    print("Visualizing heuristics net ...")
-    pm4py.view_heuristics_net(map, "pdf")
+    #print("Class name of variable map: " + map.__class__.__name__)
+    #print("Visualizing heuristics net ...")
+    #pm4py.view_heuristics_net(map, "pdf")
     # sdhiraj:  converts to png and calls All_Episodes_Miner_Output method
     pm4py.vis.save_vis_heuristics_net(map, 'heuristics.png')
     all_episodes_miner_output('/heuristics.png')
@@ -195,13 +184,13 @@ def pm_heuristics(df):
 # sdhiraj alpha miner algorithm containing petri net object and visualisation
 def pm_alpha(event_log):
     print("Discover petri net ...")
-    net, start_activities, end_activities = alpha_miner.apply(event_log)  # sdhiraj: The map object is a PetriNet
+    net, initial_marking, final_marking = alpha_miner.apply(event_log)  # sdhiraj: The map object is a PetriNet
     print("Visualizing petri net ...")
     #https://pm4py.fit.fraunhofer.de/static/assets/api/2.2.10/pm4py.visualization.petri_net.html
-    petri_net_viz = pm4py.visualization.petri_net.visualizer.apply(net, start_activities, end_activities)
-    pm4py.visualization.petri_net.visualizer.view(petri_net_viz)
+    #petri_net_viz = pm4py.visualization.petri_net.visualizer.apply(net, start_activities, end_activities)
+    #pm4py.visualization.petri_net.visualizer.view(petri_net_viz)
     # sdhiraj:  converts to png and calls All_Episodes_Miner_Output method
-    pm4py.vis.save_vis_petri_net(net, start_activities, end_activities, 'alpha.png')
+    pm4py.vis.save_vis_petri_net(net, initial_marking, final_marking, 'alpha.png')
     all_episodes_miner_output('/alpha.png')
 
 # file_to_Algorithm_Outputs('alpha.png')
@@ -210,10 +199,10 @@ def pm_alpha(event_log):
 def pm_inductive(event_log):
     print("Discover inductive...")
     tree = inductive_miner.apply_tree(event_log)
-    print("Visualizing inductive ...")
-    inductive_viz = pt_visualizer.apply(tree)
+    #print("Visualizing inductive ...")
+    #inductive_viz = pt_visualizer.apply(tree)
     # tree visualisation
-    pt_visualizer.view(inductive_viz)
+    #pt_visualizer.view(inductive_viz)
     # sdhiraj:  converts to png and calls file_to_Algorithm_Outputs method
     pm4py.vis.save_vis_process_tree(tree, 'inductive_tree.png')
     all_episodes_miner_output('/inductive_tree.png')
@@ -225,7 +214,7 @@ def pm_inductive(event_log):
                                                                    variant=pm4py.visualization.petri_net.visualizer.Variants.FREQUENCY,
                                                                    log=event_log)
     # petrinet visualisation
-    pm4py.visualization.petri_net.visualizer.view(petri_net_viz)
+    #pm4py.visualization.petri_net.visualizer.view(petri_net_viz)
     # sdhiraj:  converts to png and calls file_to_Algorithm_Outputs method
     pm4py.vis.save_vis_petri_net(net, initial_marking, final_marking, 'inductive_petri_net.png')
     all_episodes_miner_output('/inductive_petri_net.png')
@@ -239,6 +228,14 @@ def all_episodes_miner_output(file_name):
     abs_file_path = script_dir + rel_path
     os.replace(curr_file_dir, abs_file_path)
 
+# wilgy: function to calcualte distribution graph of EpisodeNo events over time (months)
+# If a full event log is passed in, saves file to All Episodes output folder, or for a singular episode
+# saves the file to the Singular Episode output folder. 
+def distribution_graph(log, file_name='Distribution_graph.pdf'):
+    if file_name =='Distribution_graph.pdf':
+        pm4py.save_vis_events_distribution_graph(log, file_path='./All_Episodes_Miner_Output/' + file_name, distr_type="months")
+    else:
+        pm4py.save_vis_events_distribution_graph(log, file_path='./Singular_Episode_Miner_Output/' + file_name, distr_type="months")
 
 # MAIN
 df = import_pm4py(import_csv(find_files('log_dataset.csv', 'C:')))
@@ -253,23 +250,17 @@ event_log = pm4py.convert_to_event_log(df)
 filter = pm4py.filter_variants_percentage(event_log, current_value.get())
 
 # wilgy: Statistics - find the median case duration of the whole log
-median_case_duration = pm4py.statistics.traces.generic.log.case_statistics.get_median_case_duration(event_log,
-                                                                                                    parameters={
-                                                                                                        pm4py.statistics.traces.generic.log.case_statistics.Parameters.TIMESTAMP_KEY: "time:timestamp"})
+median_case_duration = cs.get_median_case_duration(event_log,
+                                 parameters={cs.Parameters.TIMESTAMP_KEY: "time:timestamp"})
 print("Median case duration of the entire data set(days): {}".format(round(median_case_duration / 86400, 2)))
 
 # wilgy: Statistics - find the median case duration of the filtered log
-filtered_median_case_duration = pm4py.statistics.traces.generic.log.case_statistics.get_median_case_duration(filter,
-                                                                                                             parameters={
-                                                                                                                 pm4py.statistics.traces.generic.log.case_statistics.Parameters.TIMESTAMP_KEY: "time:timestamp"})
+filtered_median_case_duration = cs.get_median_case_duration(filter,
+                                 parameters={cs.Parameters.TIMESTAMP_KEY: "time:timestamp"})
 print("Median case duration of the filtered data set(days): {}".format(round(filtered_median_case_duration / 86400, 2)))
 
-# wilgy: Statistics - display graph of event distribution, binned by Month.
-"""x, y = attributes_filter.get_kde_date_attribute(filter, attribute="time:timestamp")
-gviz = graphs_visualizer.apply_plot(x, y, variant=graphs_visualizer.Variants.DATES)
-graphs_visualizer.view(gviz)"""
-
-pm4py.view_events_distribution_graph(filter, distr_type="months", format="pdf")
+# wilgy: save a distribution graph of the filtered data set. 
+distribution_graph(filter)
 
 # wilgy: Call the selected method to produce respective process mining output.
 # sdhiraj: added call for inductive and alpha miner
@@ -283,35 +274,6 @@ if pmSelector == 3:
     pm_alpha(filter)
 if pmSelector == 4:
     pm_inductive(filter)
-
-else:
-    print("end of prog")
-
-# wilgy: Explore details of a single EpisodeID:
-episodeID = input("Enter the EpisodeID #: ")
-#print("EpisodeID selection: {}".format(episodeID))
-#print()
-
-# wilgy: create new data frame, containing only the selected EpisodeID
-df2 = df.loc[df["case:concept:name"] == episodeID]
-
-while len(df2) == 0:
-    print("Selected EpisodeID does not exist. Please try again")
-    episodeID = input("Enter the EpisodeID #: ")
-    df2 = df.loc[df["case:concept:name"] == episodeID]
-
-else:
-    episode_event_log = pm4py.convert_to_event_log(df2)
-    # wilgy: using median case duration for single episodeID to return int, rather than get all case durations which returns list.
-    case_duration = pm4py.statistics.traces.generic.log.case_statistics.get_median_case_duration(episode_event_log,
-                                                                                                 parameters={
-                                                                                                     pm4py.statistics.traces.generic.log.case_statistics.Parameters.TIMESTAMP_KEY: 'time:timestamp'})
-    # wilgy: formula to change result to day instead of seconds, rounding to 2 decimal places.
-    case_duration = round(case_duration / 86400, 2)
-    # print(df2)
-    print("EpisodeID {} contains {} events. The total case duration is {} days".format(episodeID, len(df2),
-                                                                                       case_duration))
-    pm4py.view_events_distribution_graph(episode_event_log, distr_type="months", format="pdf")
 
 #shiraj: Get dataframe with case duration and episode numbers
 variant_df = case_statistics.get_variants_df_with_case_duration(df)
@@ -331,7 +293,6 @@ max_case_duration = variant_df['caseDuration'].max()
 print(
     "EpisodeNo {} has the maximum case duration (case time from start to finish). The case time is {} or {} days.".format(
         max_case_duration_episode, max_case_duration, round(max_case_duration / 86400, 2)))
-
 
 # ---------------------------------------------------------------------------------------------------------------------
 # sdhiraj: This section builds a user interactive window to select percentage thresholds
@@ -369,7 +330,7 @@ def single_episode_heuristic():
             # The map object is a HeuristicsNet
             #print("Class name of variable map: " + map.__class__.__name__)
             #print("Visualizing heuristics net ...")
-            pm4py.view_heuristics_net(epi_map, "pdf")
+            #pm4py.view_heuristics_net(epi_map, "pdf")
             file_name = element + "_heuristics.png"
             file_name_path = "/" + element + "_heuristics.png"
             pm4py.vis.save_vis_heuristics_net(epi_map, file_name)
@@ -386,7 +347,7 @@ def single_episode_dfg():
         if value.__eq__(element): #if episode number matches episode in list
             episode_match, df_2, episode_event_log_2 = singular_epi_window(value)
             epi_dfg, epi_start_activities, epi_end_actvities = pm4py.discover_dfg(episode_event_log_2)
-            pm4py.view_dfg(epi_dfg, epi_start_activities, epi_end_actvities, 'pdf')
+            #pm4py.view_dfg(epi_dfg, epi_start_activities, epi_end_actvities, 'pdf')
             file_name = element + "_dfg.png"
             file_name_path = "/" + element + "_dfg.png"
             pm4py.vis.save_vis_dfg(epi_dfg, epi_start_activities, epi_end_actvities, file_name)
@@ -404,7 +365,7 @@ def single_episode_inductive():
             episode_match, df_2, episode_event_log_2 = singular_epi_window(value)
             epi_tree = inductive_miner.apply_tree(episode_event_log_2)
             epi_inductive_viz = pt_visualizer.apply(epi_tree)
-            pt_visualizer.view(epi_inductive_viz)
+            #pt_visualizer.view(epi_inductive_viz)
             file_name = element + "_inductive_tree.png"
             file_name_path = "/" + element + "_inductive_tree.png"
             pm4py.vis.save_vis_process_tree(epi_tree, file_name)
@@ -412,11 +373,11 @@ def single_episode_inductive():
 
             epi_net, epi_initial_marking, epi_final_marking = pt_converter.apply(epi_tree)
             parameters = {pm4py.visualization.petri_net.visualizer.Variants.FREQUENCY.value.Parameters.FORMAT: "png"}
-            petri_net_viz = pm4py.visualization.petri_net.visualizer.apply(epi_net, epi_initial_marking, epi_final_marking,
-                                                                   parameters=parameters,
-                                                                   variant=pm4py.visualization.petri_net.visualizer.Variants.FREQUENCY,
-                                                                   log=episode_event_log_2)
-            pm4py.visualization.petri_net.visualizer.view(petri_net_viz)
+            #petri_net_viz = pm4py.visualization.petri_net.visualizer.apply(epi_net, epi_initial_marking, epi_final_marking,
+            #                                                       parameters=parameters,
+            #                                                       variant=pm4py.visualization.petri_net.visualizer.Variants.FREQUENCY,
+            #                                                       log=episode_event_log_2)
+            #pm4py.visualization.petri_net.visualizer.view(petri_net_viz)
             file_name_petri = element + "_inductive_petri_net.png"
             file_name_petri_path = "/" + element + "_inductive_petri_net.png"
             pm4py.vis.save_vis_petri_net(epi_net, epi_initial_marking, epi_final_marking, file_name_petri)
@@ -434,7 +395,7 @@ def single_episode_alpha():
             episode_match, df_2, episode_event_log_2 = singular_epi_window(value)
             epi_net, epi_start_activities, epi_end_activities = alpha_miner.apply(episode_event_log_2)  # sdhiraj: The map object is a PetriNet
             petri_net_viz = pm4py.visualization.petri_net.visualizer.apply(epi_net, epi_start_activities, epi_end_activities)
-            pm4py.visualization.petri_net.visualizer.view(petri_net_viz)
+            #pm4py.visualization.petri_net.visualizer.view(petri_net_viz)
             file_name = element + "_alpha.png"
             file_name_path = "/" + element + "_alpha.png"
             pm4py.vis.save_vis_petri_net(epi_net, epi_start_activities, epi_end_activities, file_name)
@@ -442,7 +403,6 @@ def single_episode_alpha():
 
     if episode_match == 0: #if invalid episode no, will give error pop up
         tk.messagebox.showerror("error", "Episode No was Invalid. Please try again.")
-
 
 #sdhiraj:Creates pop up window w episode info
 def singular_epi_window(episode):
@@ -461,6 +421,8 @@ def singular_epi_window(episode):
     top_bu = tk.Button(episode_info_win, text="Finish", command=closeAll)
     top_bu.pack()
     episode_match = 1
+    #wilgy: produce distribution graph for selected episode
+    distribution_graph(episode_event_log_2, '{}_Distribution_graph.pdf'.format(episode))
     return episode_match, df_2, episode_event_log_2
 
 # sdhiraj:moves png file to Singular_Episode_Miner_Output folder
@@ -474,7 +436,6 @@ def singular_episode_miner_output(file_name):
 #closes episode windows once "Finish" is clicked
 def closeAll():
     episode_window.destroy()
-
 
 # sdhiraj: Creating episode window for interaction with users.
 episode_window = tk.Tk()
