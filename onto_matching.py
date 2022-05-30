@@ -36,35 +36,24 @@ def ProperNounExtractor(text):
         words = [word for word in words if word not in set(stopwords.words('english'))]
         tagged = nltk.pos_tag(words)
         for (word, tag) in tagged:
-            if tag in ('NNP', 'NN'): # If the word is a proper noun
+            if tag in ('NNP', 'NN'): # If the word is a noun
                 nouns.append(word)
     return nouns
-
 
 #wilgy: import the terminoloies from NLM metathesuarus:
 #https://www.nlm.nih.gov/research/umls/licensedcontent/umlsknowledgesources.html?_gl=1*1o8wtvz*_ga*MTY1OTkyNDg0OS4xNjUwNDAxMjg2*_ga_7147EPK006*MTY1MTEyNzkyNy4xNC4wLjE2NTExMjc5MjcuMA..*_ga_P1FPTH9PL4*MTY1MTEyNzkyNy4xNC4wLjE2NTExMjc5MjcuMA..
 #import takes approx 10 mins. Once initial import completed, it is not necessary to import every time the program is run, hence the following lines have been
 #commented out. If new import is required, simply uncomment the lines below.    
-'''default_world.set_backend(filename = "pym.sqlite3")
-print('Importing terminologies...')
-import_umls(find_files("umls-2021AB-metathesaurus.zip", 'C:'), terminologies = ["SNOMEDCT", "CUI"])
-print('Imported') '''
-default_world.save()
+default_world.set_backend(filename = "pym.sqlite3")
+""" print('Importing terminologies...')
+import_umls(find_files("umls-2021AB-metathesaurus.zip", 'C:'), terminologies = ["SNOMEDCT_US", "CUI"])
+print('Imported')
+default_world.save() """
 
 #wilgy: set backend for pyMedTermino2 to query and create relvant variables. 
-default_world.set_backend(filename="pym.sqlite3")
 PYM = get_ontology("http://PYM/").load()
 SNOMEDCT = PYM["SNOMEDCT_US"]
 CUI = PYM["CUI"] #UMLS
-print(PYM)
-concept = SNOMEDCT[302509004]
-print(concept)
-
-
-#TODO add user input search function
-""" search_result = SNOMEDCT_US.search("Sendaway bag taken")
-print("There are {} potential matches:".format(len(search_result)))
-print(search_result) """
 
 df = pd.read_csv(find_files('log_dataset.csv', 'C:'))
 
@@ -89,10 +78,17 @@ for i in activity_list_stripped:
     sno_result = SNOMEDCT.search(i)
     if len(sno_result) != 0:
         count_success += 1
-        print("Potential SNOMED matches for '" + str(i) + "'" + ": \n{}".format(sno_result))
+        print('\nPotential SNOMED matches for "' + str(i) + '"' + ':')
+        for i in sno_result[:3]: #determine how many parents and children the concept has . 
+            parent_count = len(SNOMEDCT[i.name].parents) 
+            children_count = len(SNOMEDCT[i.name].children)
+            concept_label = i.label[0]
+            concept_name = i.name            
+            print('(#' + concept_name + ') "' + concept_label  + '" has {} parent/s and {} children.'.format(parent_count, children_count))
+        
 
 success_rate = (count_success/len(activity_list)) * 100
-print("Out of {} activities, {} had matches. Therefore the success rate is %{}".format(len(activity_list_stripped),count_success, round(success_rate, 2)))
+print("\nOut of {} activities, {} had matches. Therefore the success rate is %{}".format(len(activity_list_stripped),count_success, round(success_rate, 2)))
 print("***Finished SNOMED***\n")
 
 # wilgy: search UMLS terminology for any matches, tracking the count of matches to determine overall matching 
@@ -102,12 +98,16 @@ for i in activity_list_stripped:
     umls_result = CUI.search(i)
     if len(umls_result) != 0:
         count_success += 1
-        print("Potential UMLS matches for '" + str(i) + "'" + ": \n{}".format(umls_result))
-
+        print("\nPotential UMLS matches for '" + str(i) + "'" + ":")
+        for i in umls_result[:3]: #determine how many parents and children the concept has . 
+            parent_count = len(CUI[i.name].parents) 
+            children_count = len(CUI[i.name].children)
+            concept_label = i.label[0]
+            concept_name = i.name            
+            print('(#' + concept_name + ') "' + concept_label  + '" has {} parent/s and {} children.'.format(parent_count, children_count))
+        
 success_rate = (count_success/len(activity_list)) * 100
-print("Out of {} activities, {} had matches. Therefore the success rate is %{}".format(len(activity_list_stripped),count_success, round(success_rate, 2)))
-
-
+print("\nOut of {} activities, {} had matches. Therefore the success rate is %{}".format(len(activity_list_stripped),count_success, round(success_rate, 2)))
 print("***Finished UMLS***\n")
 
 #wilgy: create new list with test set data from data dictionary:
@@ -117,7 +117,7 @@ test_set_list = ['Referred request for NIPT', 'Local request for NIPT'
     , 'Troubleshooting request data sent back for the referring lab to action'
     , 'Troubleshooting request data for SNP to action', 'NIPT redraw request recollect', 'Venus PDF reporting test']
 
-
+#wilgy: Search through SNOMED with the phrases from test_set_list.
 sno_list = []
 for i in test_set_list:
     sno_result = SNOMEDCT.search(i)
@@ -175,16 +175,20 @@ for i in nouns_list:
             parent_count = len(SNOMEDCT[i.name].parents) 
             children_count = len(SNOMEDCT[i.name].children)
             concept_label = i.label[0]
-            
-            print(concept_label + ' (has {} parent/s and {} children.)'.format(parent_count, children_count))
+            concept_name = i.name
+            print('(#' + concept_name + ') "' + concept_label  + '" has {} parent/s and {} children.'.format(parent_count, children_count))
         print("\n*****\n")      
     else:
         print("No matches found for '" + str(i) + "'\n\n*****\n")
 print('Out of {} nouns, {} had matches.'.format(len(nouns_list), noun_count))
 print("***Finished SNOMED***\n")
 
+#wilgy: prompt for terminal input to conduct search on specified string input.
+search_string = input("Enter a phrase or word to search: ")
+search_result = SNOMEDCT.search(search_string)
+print("There are {} potential matches. The first 5 are:".format(len(search_result)))
+print(search_result[:5])
+
 #wilgy: Display code runtime
 print("Program runtime --- {} seconds --- (-- {} minutes --)".format((round((time.time() - start_time), 2)), (round(((time.time() - start_time)/60), 2) )))
-
-
 

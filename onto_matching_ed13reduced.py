@@ -58,11 +58,6 @@ PYM = get_ontology("http://PYM/").load()
 SNOMEDCT = PYM["SNOMEDCT_US"]
 CUI = PYM["CUI"] #UMLS
 
-#TODO add user input search function
-""" search_result = SNOMEDCT_US.search("Sendaway bag taken")
-print("There are {} potential matches:".format(len(search_result)))
-print(search_result) """
-
 df = pd.read_csv(find_files('ed13reduced.csv', 'C:'))
 
 #wilgy: convert column to type string. 
