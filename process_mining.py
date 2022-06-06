@@ -146,6 +146,8 @@ def import_pm4py(event_log):
                                        , timestamp_key='EndTime', start_timestamp_key='EventTime')
     start_activities = pm4py.get_start_activities(event_log)
     end_activities = pm4py.get_end_activities(event_log)
+    num_variants = pm4py.get_variants_as_tuples(event_log)
+    print("Number of variants: {}".format(len(num_variants)))
     print("Number of unique start activities: {}".format(len(set(start_activities))))
     print("Number of unique end activities: {}".format(len(set(end_activities))))
     return event_log
@@ -478,7 +480,4 @@ episode_window.mainloop()
 
 # ----------------------------------------------------------------------------------------------------------------------
 # sdhiraj: End of Episode Selection window
-# ---------------------------------------------------------------------------------------------------------------------
-
-
-#do you need ur duration code? Since we are saving it, do you still want to output it
+# ----------------------------------------------------------------------------------------------------------------------

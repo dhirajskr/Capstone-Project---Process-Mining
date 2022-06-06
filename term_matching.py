@@ -42,14 +42,14 @@ def ProperNounExtractor(text):
 
 #wilgy: import the terminoloies from NLM metathesuarus:
 #https://www.nlm.nih.gov/research/umls/licensedcontent/umlsknowledgesources.html?_gl=1*1o8wtvz*_ga*MTY1OTkyNDg0OS4xNjUwNDAxMjg2*_ga_7147EPK006*MTY1MTEyNzkyNy4xNC4wLjE2NTExMjc5MjcuMA..*_ga_P1FPTH9PL4*MTY1MTEyNzkyNy4xNC4wLjE2NTExMjc5MjcuMA..
-#import takes approx 10 mins. Once initial import completed, it is not necessary to import every time the program is run, hence the following lines have been
+#import takes approx 20 mins. Once initial import completed, it is not necessary to import every time the program is run, hence the following lines have been
 #commented out. If new import is required, simply uncomment the lines below.    
 default_world.set_backend(filename = "pym.sqlite3")
 """ print('Importing terminologies...')
 import_umls(find_files("umls-2021AB-metathesaurus.zip", 'C:'), terminologies = ["SNOMEDCT_US", "CUI"])
 print('Imported')
-default_world.save() """
-
+default_world.save()
+ """
 #wilgy: set backend for pyMedTermino2 to query and create relvant variables. 
 PYM = get_ontology("http://PYM/").load()
 SNOMEDCT = PYM["SNOMEDCT_US"]
@@ -86,7 +86,6 @@ for i in activity_list_stripped:
             concept_name = i.name            
             print('(#' + concept_name + ') "' + concept_label  + '" has {} parent/s and {} children.'.format(parent_count, children_count))
         
-
 success_rate = (count_success/len(activity_list)) * 100
 print("\nOut of {} activities, {} had matches. Therefore the success rate is %{}".format(len(activity_list_stripped),count_success, round(success_rate, 2)))
 print("***Finished SNOMED***\n")
@@ -146,11 +145,7 @@ for i in test_set_list:
         print("")
     else:
         print('No nouns found\n')
-    
-    
-
 print('++++++++++++++++++++++++++++++++++++++++++++++++++')
-
 
 #wilgy: convert list to a set to extract unique entries.
 nouns_set = set(nouns_list)
