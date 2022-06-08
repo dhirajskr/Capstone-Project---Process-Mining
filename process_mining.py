@@ -233,7 +233,7 @@ def all_episodes_miner_output(file_name):
 # wilgy: function to calcualte distribution graph of EpisodeNo events over time (months)
 # If a full event log is passed in, saves file to All Episodes output folder, or for a singular episode
 # saves the file to the Singular Episode output folder. 
-def distribution_graph(log, file_name='Distribution_graph.pdf'):
+def distribution_graph(log, file_name='Distribution_graph.pdf'):    
     if file_name =='Distribution_graph.pdf':
         pm4py.save_vis_events_distribution_graph(log, file_path='./All_Episodes_Miner_Output/' + file_name, distr_type="months")
     else:
